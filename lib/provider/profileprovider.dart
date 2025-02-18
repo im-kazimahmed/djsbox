@@ -1,0 +1,249 @@
+import 'package:yourappname/model/addremoveblockchannelmodel.dart';
+import 'package:yourappname/model/getcontentbychannelmodel.dart'
+    as channelcontent;
+import 'package:yourappname/model/getcontentbychannelmodel.dart';
+import 'package:yourappname/model/getuserbyrentcontentmodel.dart' as rent;
+import 'package:yourappname/model/getuserbyrentcontentmodel.dart';
+import 'package:yourappname/model/successmodel.dart';
+import 'package:yourappname/utils/constant.dart';
+import 'package:yourappname/utils/sharedpre.dart';
+import 'package:yourappname/utils/utils.dart';
+import 'package:flutter/material.dart';
+import 'package:yourappname/model/profilemodel.dart';
+import 'package:yourappname/webservice/apiservice.dart';
+
+class ProfileProvider extends ChangeNotifier {
+  ProfileModel profileModel = ProfileModel();
+  SuccessModel successModel = SuccessModel();
+
+  GetContentbyChannelModel getContentbyChannelModel =
+      GetContentbyChannelModel();
+  GetUserRentContentModel getUserRentContentModel = GetUserRentContentModel();
+  AddremoveblockchannelModel addremoveblockchannelModel =
+      AddremoveblockchannelModel();
+
+  bool loading = false, profileloading = false;
+  bool loadMore = false;
+  bool loadingUpdate = false;
+  bool deletecontentLoading = false;
+  int deleteItemIndex = 0;
+  int position = 0;
+
+  List<channelcontent.Result>? channelContentList = [];
+  int? totalRows, totalPage, currentPage;
+  bool? isMorePage;
+
+  List<rent.Result>? rentContentList = [];
+  bool rentloadMore = false;
+  int? renttotalRows, renttotalPage, rentcurrentPage;
+  bool? rentisMorePage;
+
+  SharedPre sharedPre = SharedPre();
+
+  Future<void> getprofile(BuildContext context, touserid) async {
+    printLog("getProfile userID :==> ${Constant.userID}");
+    profileloading = true;
+    profileModel = await ApiService().profile(touserid);
+    printLog("get_profile status :==> ${profileModel.status}");
+    printLog("get_profile message :==> ${profileModel.message}");
+    if (profileModel.status == 200 && profileModel.result != null) {
+      if ((profileModel.result?.length ?? 0) > 0) {
+        if (context.mounted) {
+          Utils.saveUserCreds(
+              userID: profileModel.result?[0].id.toString(),
+              channeId: profileModel.result?[0].channelId.toString(),
+              channelName: profileModel.result?[0].channelName.toString(),
+              fullName: profileModel.result?[0].fullName.toString(),
+              email: profileModel.result?[0].email.toString(),
+              mobileNumber: profileModel.result?[0].mobileNumber.toString(),
+              image: profileModel.result?[0].image.toString(),
+              coverImg: profileModel.result?[0].coverImg.toString(),
+              deviceType: profileModel.result?[0].deviceType.toString(),
+              deviceToken: profileModel.result?[0].deviceToken.toString(),
+              userIsBuy: profileModel.result?[0].isBuy.toString(),
+              isAdsFree: profileModel.result?[0].adsFree.toString(),
+              isDownload: profileModel.result?[0].isDownload.toString());
+          Utils.loadAds(context);
+        }
+      }
+    }
+    profileloading = false;
+    notifyListeners();
+  }
+
+  getDeleteContent(index, contenttype, contentid, episodeid) async {
+    deleteItemIndex = index;
+    setDeletePlaylistLoading(true);
+    successModel =
+        await ApiService().deleteContent(contenttype, contentid, episodeid);
+    setDeletePlaylistLoading(false);
+    channelContentList?.removeAt(index);
+  }
+
+  setDeletePlaylistLoading(isSending) {
+    printLog("isSending ==> $isSending");
+    deletecontentLoading = isSending;
+    notifyListeners();
+  }
+
+  addremoveBlockChannel(blockUserId, blockChannelId) async {
+    loading = true;
+    addremoveblockchannelModel =
+        await ApiService().addremoveBlockChannel(blockUserId, blockChannelId);
+    loading = false;
+    notifyListeners();
+  }
+
+/* All Content By Channel  */
+
+  Future<void> getcontentbyChannel(
+      userid, chennelId, contenttype, pageNo) async {
+    loading = true;
+    getContentbyChannelModel = await ApiService()
+        .contentbyChannel(userid, chennelId, contenttype, pageNo);
+    if (getContentbyChannelModel.status == 200) {
+      setPaginationData(
+          getContentbyChannelModel.totalRows,
+          getContentbyChannelModel.totalPage,
+          getContentbyChannelModel.currentPage,
+          getContentbyChannelModel.morePage);
+      if (getContentbyChannelModel.result != null &&
+          (getContentbyChannelModel.result?.length ?? 0) > 0) {
+        printLog(
+            "followingModel length :==> ${(getContentbyChannelModel.result?.length ?? 0)}");
+        printLog('Now on page ==========> $currentPage');
+        if (getContentbyChannelModel.result != null &&
+            (getContentbyChannelModel.result?.length ?? 0) > 0) {
+          printLog(
+              "followingModel length :==> ${(getContentbyChannelModel.result?.length ?? 0)}");
+          for (var i = 0;
+              i < (getContentbyChannelModel.result?.length ?? 0);
+              i++) {
+            channelContentList?.add(
+                getContentbyChannelModel.result?[i] ?? channelcontent.Result());
+          }
+          final Map<int, channelcontent.Result> postMap = {};
+          channelContentList?.forEach((item) {
+            postMap[item.id ?? 0] = item;
+          });
+          channelContentList = postMap.values.toList();
+          printLog(
+              "followFollowingList length :==> ${(channelContentList?.length ?? 0)}");
+          setLoadMore(false);
+        }
+      }
+    }
+    loading = false;
+    notifyListeners();
+  }
+
+  setPaginationData(
+      int? totalRows, int? totalPage, int? currentPage, bool? morePage) {
+    this.currentPage = currentPage;
+    this.totalRows = totalRows;
+    this.totalPage = totalPage;
+    isMorePage = morePage;
+    notifyListeners();
+  }
+
+/* Rent Video */
+
+  Future<void> getUserbyRentContent(userId, pageNo) async {
+    loading = true;
+    getUserRentContentModel =
+        await ApiService().rentContenetByUser(userId, pageNo);
+    if (getUserRentContentModel.status == 200) {
+      setRentPaginationData(
+          getUserRentContentModel.totalRows,
+          getUserRentContentModel.totalPage,
+          getUserRentContentModel.currentPage,
+          getUserRentContentModel.morePage);
+      if (getUserRentContentModel.result != null &&
+          (getUserRentContentModel.result?.length ?? 0) > 0) {
+        printLog(
+            "followingModel length :==> ${(getUserRentContentModel.result?.length ?? 0)}");
+        printLog('Now on page ==========> $currentPage');
+        if (getUserRentContentModel.result != null &&
+            (getUserRentContentModel.result?.length ?? 0) > 0) {
+          printLog(
+              "followingModel length :==> ${(getUserRentContentModel.result?.length ?? 0)}");
+          for (var i = 0;
+              i < (getUserRentContentModel.result?.length ?? 0);
+              i++) {
+            rentContentList
+                ?.add(getUserRentContentModel.result?[i] ?? rent.Result());
+          }
+          final Map<int, rent.Result> postMap = {};
+          rentContentList?.forEach((item) {
+            postMap[item.id ?? 0] = item;
+          });
+          rentContentList = postMap.values.toList();
+          printLog(
+              "followFollowingList length :==> ${(rentContentList?.length ?? 0)}");
+          setLoadMore(false);
+        }
+      }
+    }
+    loading = false;
+    notifyListeners();
+  }
+
+  setRentPaginationData(int? renttotalRows, int? renttotalPage,
+      int? rentcurrentPage, bool? morePage) {
+    this.rentcurrentPage = rentcurrentPage;
+    this.renttotalRows = renttotalRows;
+    this.renttotalPage = renttotalPage;
+    rentisMorePage = rentisMorePage;
+    notifyListeners();
+  }
+
+/* Load More ProgressBar */
+
+  setLoadMore(loadMore) {
+    this.loadMore = loadMore;
+    notifyListeners();
+  }
+
+  Future<void> getUpdateDataForPayment(fullName, email, mobileNumber) async {
+    printLog("getUpdateDataForPayment fullname :==> $fullName");
+    printLog("getUpdateDataForPayment email :=====> $email");
+    printLog("getUpdateDataForPayment mobile :====> $mobileNumber");
+    loadingUpdate = true;
+    successModel =
+        await ApiService().updateDataForPayment(fullName, email, mobileNumber);
+    printLog("getUpdateDataForPayment status :==> ${successModel.status}");
+    printLog("getUpdateDataForPayment message :==> ${successModel.message}");
+    loadingUpdate = false;
+    notifyListeners();
+  }
+
+  setUpdateLoading(bool isLoading) {
+    loadingUpdate = isLoading;
+    notifyListeners();
+  }
+
+  changeTab(index) {
+    position = index;
+    notifyListeners();
+  }
+
+  clearListData() {
+    channelContentList = [];
+    channelContentList?.clear();
+    getContentbyChannelModel = GetContentbyChannelModel();
+  }
+
+  clearProvider() {
+    loading = false;
+    position = 0;
+    profileModel = ProfileModel();
+    getContentbyChannelModel = GetContentbyChannelModel();
+    channelContentList = [];
+    channelContentList?.clear();
+    loadMore = false;
+    totalRows;
+    totalPage;
+    currentPage;
+    isMorePage;
+  }
+}

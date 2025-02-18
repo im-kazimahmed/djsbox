@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1076516562552",
+    "project_id": "djsboxfun-a83c9",
+    "storage_bucket": "djsboxfun-a83c9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076516562552:android:14185b5e6d5b0ce150af8d",
+        "android_client_info": {
+          "package_name": "com.techsolutions.djsboxfun"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDM5Q6xOoJPtB028O8N5Zh6VwZyg_BNEOE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076516562552:android:314a0827ad50f72050af8d",
+        "android_client_info": {
+          "package_name": "com.techsolutions.djsboxfun"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDM5Q6xOoJPtB028O8N5Zh6VwZyg_BNEOE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
